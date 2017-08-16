@@ -46,7 +46,7 @@ def dbHandle():
     conn = pymysql.connect(
         host='127.0.0.1',
         user='root',
-        passwd='',
+        passwd='123456',
         charset='utf8',
         use_unicode=False
     )

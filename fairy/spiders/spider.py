@@ -64,6 +64,7 @@ class Spider(CrawlSpider):
                 yield Request(url=url_Fairy, meta={"ID": ID}, callback=self.parse1)  # 去爬调整历史
         """
 
+
     def parse2(self,response):
         selector = Selector(response)
         print 'parse0'
@@ -83,8 +84,21 @@ class Spider(CrawlSpider):
                 yield Request(url=url_Fairy, meta={"ID": m['symbol'],"NAME":m['name'],"SIGN":response.meta["SIGN"]}, callback=self.parse1)  # 去爬调整历史
 
 
+
+    def string_toDatetime(string):
+        return datetime.datetime.strptime(string, "%Y-%m-%d")
+
+
+    def compare_dateTime(dateStr1,dateStr2):
+        date1 = string_toDatetime(dateStr1)
+        date2 = string_toDatetime(dateStr2)
+        return date1.date()>date2.date()
+
+
     def parse1(self, response):
         """ 抓取json数据 """
+
+        run_forerver = True
         selector = Selector(response)
         con = json.loads(response.body_as_unicode(),encoding="gbk") 
         #假如已爬队列
@@ -110,11 +124,20 @@ class Spider(CrawlSpider):
                 changeListItem["price"]=m['rebalancing_histories'][0]['price']
                 changeListItem["prev_weight_adjusted"]=m['rebalancing_histories'][0]['prev_weight_adjusted']
             #   changeListItem["updated_at"]=datetime.datetime.utcfromtimestamp(float(str(m['rebalancing_histories'][0]['updated_at'])[0:10]))
+                l=time.localtime(float(str(m['rebalancing_histories'][0]['updated_at'])[0:10]))
                 changeListItem["updated_at"]=time.localtime(float(str(m['rebalancing_histories'][0]['updated_at'])[0:10]))
                 changeListItem["stock_symbol"]=m['rebalancing_histories'][0]['stock_symbol']
+
+                s= datetime.datetime.now().strftime('%Y-%m-%d')
+                date1 = datetime.datetime.strptime(s, "%Y-%m-%d")
+                date2 = datetime.datetime.strptime(time.strftime('%Y-%m-%d',l), "%Y-%m-%d")
+                if  (date1.date()>date2.date()):
+                    run_forerver = False
+                    break
                 yield changeListItem
         #pdb.set_trace()
-        if  con['page']< con['maxPage']:
+        print run_forerver
+        if  (con['page']< con['maxPage']) and run_forerver:
             nextPage = con['page']+1
             print '------nextPage',nextPage
             url_next = "https://xueqiu.com/service/tc/snowx/PAMID/cubes/rebalancing/history?cube_symbol=%s&page=%s" % (response.meta["ID"],nextPage)
